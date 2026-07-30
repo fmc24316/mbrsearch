@@ -65,8 +65,8 @@
     </div>
 
     <script>
-      // 步驟一：將下方的網址替換為你實際的 GAS 網頁應用程式網址
-      const GAS_API_URL = "請將這裡替換為你的_GAS_網址";
+      // 這裡已經替換為你實際部署完成的 GAS 網頁應用程式網址
+      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbww8ugoxuQ0DvR2eKtehlDN_WTmArzS7WU-WiD0iXHuVviwnmAeOhW2WmlQsP7AtvqO/exec";
 
       function performSearch() {
         var uuidInput = document.getElementById('lineUuid').value.trim();
@@ -77,33 +77,32 @@
           return;
         }
 
-        // 防呆提示：判斷是否輸入了純數字(如手機號碼)
-        if (/^\d+$/.test(uuidInput)) {
-          console.log("[前端警告] 輸入的內容看起來像是純數字(手機號碼)，LINE API 預期的是 UUID (例如 Uc1...)，這可能會導致後端查無資料。");
-        }
-
-        // 檢查是否有替換網址
-        if (GAS_API_URL === "https://script.google.com/macros/s/AKfycbww8ugoxuQ0DvR2eKtehlDN_WTmArzS7WU-WiD0iXHuVviwnmAeOhW2WmlQsP7AtvqO/exec") {
-          console.log("[前端嚴重錯誤] 尚未替換 GAS_API_URL，請先修改程式碼中的網址。");
-          showError("請先在程式碼中填入正確的 GAS 網址。");
+        // 防呆檢查：確認網址格式是否為 Google 網域
+        if (GAS_API_URL.indexOf("https://script.google.com") === -1) {
+          console.log("[前端嚴重錯誤] 網址格式不正確。目前的設定值為: " + GAS_API_URL);
+          showError("程式設定錯誤：GAS 網址無效。");
           return;
         }
 
-        // 切換介面顯示狀態
+        // 防呆檢查：判斷是否輸入純數字，提醒可能導致查無資料
+        if (/^\d+$/.test(uuidInput)) {
+          console.log("[前端警告] 輸入的內容為純數字，LINE API 預期的是 UUID，可能會導致查無資料。");
+        }
+
+        // 切換介面顯示狀態為載入中
         document.getElementById('searchBtn').disabled = true;
         document.getElementById('loading').classList.remove('d-none');
         document.getElementById('resultCard').classList.add('d-none');
         document.getElementById('errorMessage').classList.add('d-none');
 
-        // 準備要傳送給後端的資料
+        // 建立要傳送給後端的 JSON 資料物件
         var payload = {
           "W_LINE_UUID": uuidInput
         };
-        console.log("[前端] 準備發送 API 請求給 GAS，完整網址: " + GAS_API_URL);
-        console.log("[前端] 準備發送的 JSON 內容: ", payload);
+        console.log("[前端] 準備發送 API 請求，目標網址: " + GAS_API_URL);
+        console.log("[前端] 準備發送的資料: ", payload);
 
-        // 使用 fetch 呼叫 GAS 後端 API
-        // 強化設定：加上 text/plain 與 redirect 處理 GAS 的重新導向與 CORS
+        // 使用 fetch 向 GAS 發送 POST 請求
         fetch(GAS_API_URL, {
           method: "POST",
           headers: {
@@ -115,7 +114,7 @@
         .then(response => {
           console.log("[前端] 收到伺服器回應，HTTP 狀態碼: " + response.status);
           if (!response.ok) {
-            throw new Error("HTTP 錯誤狀態: " + response.status);
+            throw new Error("HTTP 伺服器錯誤狀態碼: " + response.status);
           }
           return response.json();
         })
@@ -125,18 +124,21 @@
         })
         .catch(error => {
           console.log("[前端] 網路連線或解析時發生嚴重錯誤: ", error);
-          showError("網路連線或系統錯誤，請按 F12 查看 Console 主控台日誌。錯誤細節：" + error.message);
+          showError("網路連線或系統錯誤，請按 F12 查看主控台日誌。細節：" + error.message);
         });
       }
 
+      // 處理後端回傳成功的邏輯
       function onSuccess(response) {
         document.getElementById('searchBtn').disabled = false;
         document.getElementById('loading').classList.add('d-none');
 
         if (response.success) {
+          // 將回傳的姓名與電話填寫至網頁中
           document.getElementById('resName').innerText = response.name || "未提供";
           document.getElementById('resPhone').innerText = response.phone || "未提供";
           
+          // 依據會員資格顯示對應的標籤顏色與文字
           var statusSpan = document.getElementById('resStatus');
           if (response.isMember) {
             statusSpan.innerHTML = '<span class="badge bg-success fs-6">正式會員 (isMbr: Y)</span>';
@@ -144,12 +146,15 @@
             statusSpan.innerHTML = '<span class="badge bg-danger fs-6">非會員 (isMbr: N)</span>';
           }
           
+          // 顯示結果卡片
           document.getElementById('resultCard').classList.remove('d-none');
         } else {
+          // 顯示後端業務邏輯回傳的錯誤訊息
           showError("查詢失敗：" + (response.message || "未知錯誤"));
         }
       }
 
+      // 處理並顯示錯誤訊息的邏輯
       function showError(message) {
         document.getElementById('searchBtn').disabled = false;
         document.getElementById('loading').classList.add('d-none');
