@@ -23,12 +23,13 @@
     <div class="container">
       <div class="card card-custom">
         <div class="card-header bg-primary text-white text-center py-3">
-          <h4 class="mb-0">會員資格查詢系統</h4>
+          <h4 class="mb-0">會員資格查詢作業</h4>
         </div>
         <div class="card-body p-4">
           <div class="mb-3">
-            <label for="lineUuid" class="form-label fw-bold">請輸入 LINE UUID：</label>
-            <input type="text" class="form-control" id="lineUuid" placeholder="例如：Uc1dfe3b604723867adb4a81102c6b822">
+            <!-- 標題提示改為支援 UUID 或手機號碼 -->
+            <label for="queryInput" class="form-label fw-bold">請輸入 LINE UUID 或 手機號碼：</label>
+            <input type="text" class="form-control" id="queryInput" placeholder="例如：Uc1dfe... 或 0988...">
           </div>
           
           <button id="searchBtn" class="btn btn-primary w-100 py-2 fw-bold" onclick="performSearch()">開始查詢</button>
@@ -69,11 +70,11 @@
       const WORKER_API_URL = "https://member-api.fmc24316.workers.dev";
 
       function performSearch() {
-        var uuidInput = document.getElementById('lineUuid').value.trim();
-        console.log("[前端] 點擊查詢按鈕，使用者輸入的 UUID: " + uuidInput);
+        var inputValue = document.getElementById('queryInput').value.trim();
+        console.log("[前端] 點擊查詢按鈕，使用者輸入內容: " + inputValue);
 
-        if (!uuidInput) {
-          alert("請輸入 LINE UUID");
+        if (!inputValue) {
+          alert("請輸入 LINE UUID 或 手機號碼");
           return;
         }
 
@@ -89,8 +90,9 @@
         document.getElementById('resultCard').classList.add('d-none');
         document.getElementById('errorMessage').classList.add('d-none');
 
+        // 將輸入值放進 queryValue 參數中傳給後端
         var payload = {
-          "W_LINE_UUID": uuidInput
+          "queryValue": inputValue
         };
         console.log("[前端] 準備發送 API 請求給 Worker，資料: ", payload);
 
