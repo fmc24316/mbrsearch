@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>會員資格查詢系統</title>
-    <!-- 引入 Bootstrap 5 -->
+    <!-- 引入 Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
       body {
@@ -65,15 +65,27 @@
     </div>
 
     <script>
-      // 請將下方引號內的網址替換為你實際部署完成的 GAS 網頁應用程式網址
-      const GAS_API_URL = "https://script.google.com/macros/s/AKfycbww8ugoxuQ0DvR2eKtehlDN_WTmArzS7WU-WiD0iXHuVviwnmAeOhW2WmlQsP7AtvqO/exec";
+      // 步驟一：將下方的網址替換為你實際的 GAS 網頁應用程式網址
+      const GAS_API_URL = "請將這裡替換為你的_GAS_網址";
 
       function performSearch() {
         var uuidInput = document.getElementById('lineUuid').value.trim();
-        console.log("[前端] 使用者點擊查詢，輸入的 UUID: " + uuidInput);
+        console.log("[前端] 點擊查詢按鈕，使用者輸入的內容: " + uuidInput);
 
         if (!uuidInput) {
           alert("請輸入 LINE UUID");
+          return;
+        }
+
+        // 防呆提示：判斷是否輸入了純數字(如手機號碼)
+        if (/^\d+$/.test(uuidInput)) {
+          console.log("[前端警告] 輸入的內容看起來像是純數字(手機號碼)，LINE API 預期的是 UUID (例如 Uc1...)，這可能會導致後端查無資料。");
+        }
+
+        // 檢查是否有替換網址
+        if (GAS_API_URL === "https://script.google.com/macros/s/AKfycbww8ugoxuQ0DvR2eKtehlDN_WTmArzS7WU-WiD0iXHuVviwnmAeOhW2WmlQsP7AtvqO/exec") {
+          console.log("[前端嚴重錯誤] 尚未替換 GAS_API_URL，請先修改程式碼中的網址。");
+          showError("請先在程式碼中填入正確的 GAS 網址。");
           return;
         }
 
@@ -87,25 +99,33 @@
         var payload = {
           "W_LINE_UUID": uuidInput
         };
-        console.log("[前端] 準備發送 API 請求，內容: ", payload);
+        console.log("[前端] 準備發送 API 請求給 GAS，完整網址: " + GAS_API_URL);
+        console.log("[前端] 準備發送的 JSON 內容: ", payload);
 
         // 使用 fetch 呼叫 GAS 後端 API
-        // 注意：不設定 'Content-Type': 'application/json' 以避免觸發 GAS 不支援的 OPTIONS 預檢請求
+        // 強化設定：加上 text/plain 與 redirect 處理 GAS 的重新導向與 CORS
         fetch(GAS_API_URL, {
           method: "POST",
-          body: JSON.stringify(payload)
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload),
+          redirect: "follow"
         })
         .then(response => {
-          console.log("[前端] 收到 HTTP 回應狀態: " + response.status);
+          console.log("[前端] 收到伺服器回應，HTTP 狀態碼: " + response.status);
+          if (!response.ok) {
+            throw new Error("HTTP 錯誤狀態: " + response.status);
+          }
           return response.json();
         })
         .then(data => {
-          console.log("[前端] 解析後端回傳資料成功: ", data);
+          console.log("[前端] 成功解析後端回傳資料: ", data);
           onSuccess(data);
         })
         .catch(error => {
-          console.log("[前端] 發送請求時發生網路或解析錯誤: ", error);
-          onFailure(error);
+          console.log("[前端] 網路連線或解析時發生嚴重錯誤: ", error);
+          showError("網路連線或系統錯誤，請按 F12 查看 Console 主控台日誌。錯誤細節：" + error.message);
         });
       }
 
@@ -126,18 +146,16 @@
           
           document.getElementById('resultCard').classList.remove('d-none');
         } else {
-          var errorDiv = document.getElementById('errorMessage');
-          errorDiv.innerText = "查詢失敗：" + (response.message || "未知錯誤");
-          errorDiv.classList.remove('d-none');
+          showError("查詢失敗：" + (response.message || "未知錯誤"));
         }
       }
 
-      function onFailure(error) {
+      function showError(message) {
         document.getElementById('searchBtn').disabled = false;
         document.getElementById('loading').classList.add('d-none');
         
         var errorDiv = document.getElementById('errorMessage');
-        errorDiv.innerText = "網路連線或系統錯誤，請查看主控台日誌。";
+        errorDiv.innerText = message;
         errorDiv.classList.remove('d-none');
       }
     </script>
