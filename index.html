@@ -27,7 +27,6 @@
         </div>
         <div class="card-body p-4">
           <div class="mb-3">
-            <!-- 標題提示改為支援 UUID 或手機號碼 -->
             <label for="queryInput" class="form-label fw-bold">請輸入 LINE UUID 或 手機號碼：</label>
             <input type="text" class="form-control" id="queryInput" placeholder="例如：Uc1dfe... 或 0988...">
           </div>
@@ -66,7 +65,7 @@
     </div>
 
     <script>
-      // 這裡請替換為你的 Cloudflare Worker 網址
+      // 指定 API 網址，已對應你建立的後端 Worker
       const WORKER_API_URL = "https://member-api.fmc24316.workers.dev";
 
       function performSearch() {
@@ -84,19 +83,16 @@
           return;
         }
 
-        // 切換介面狀態為載入中
         document.getElementById('searchBtn').disabled = true;
         document.getElementById('loading').classList.remove('d-none');
         document.getElementById('resultCard').classList.add('d-none');
         document.getElementById('errorMessage').classList.add('d-none');
 
-        // 將輸入值放進 queryValue 參數中傳給後端
         var payload = {
           "queryValue": inputValue
         };
         console.log("[前端] 準備發送 API 請求給 Worker，資料: ", payload);
 
-        // 呼叫 Cloudflare Worker
         fetch(WORKER_API_URL, {
           method: "POST",
           headers: {
